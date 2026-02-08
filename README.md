@@ -1,36 +1,85 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PyPuzzle - Python学習アプリ
 
-## Getting Started
+Duolingo形式のドラッグ＆ドロップでPythonの基礎文法を学べるWebアプリです。
+通勤・通学のスキマ時間にスマホで手軽にPythonを身につけられます。
 
-First, run the development server:
+## 特徴
+
+- **タップ＆DnDでコード並べ替え** — コードブロックをタップで選択、長押しドラッグで並び替え
+- **2つの問題モード** — トークン単位（`x`, `=`, `10`）と行単位（`if x > 5:`）で難易度を調整
+- **5カテゴリ × 4問 = 20問** — 変数、print文、条件分岐、ループ、関数をカバー
+- **ニガテ問題集** — 過去の回答傾向から苦手な問題を自動ピックアップ
+- **進捗の自動保存** — ブラウザのlocalStorageに学習データを永続化
+- **モバイルファースト** — スマホでの操作に最適化したUI
+
+## スクリーンショット
+
+<!-- TODO: デプロイ後にスクリーンショットを追加 -->
+
+## 技術スタック
+
+| カテゴリ | 技術 |
+|---|---|
+| フレームワーク | Next.js 16 (App Router, TypeScript) |
+| スタイリング | Tailwind CSS v4 |
+| D&D | @dnd-kit (core + sortable + utilities) |
+| 状態管理 | zustand (localStorage永続化) |
+| アイコン | lucide-react |
+| 問題データ | Google Sheets API（モックデータでも動作可） |
+
+## セットアップ
 
 ```bash
+# 依存パッケージのインストール
+npm install
+
+# 開発サーバー起動
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+[http://localhost:3000](http://localhost:3000) をブラウザで開いてください。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+環境変数の設定なしでモックデータにより動作します。
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Google Sheets連携（任意）
 
-## Learn More
+実データに切り替える場合は `.env.local` を作成:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+cp .env.example .env.local
+# GOOGLE_SHEETS_ID と GOOGLE_SERVICE_ACCOUNT_KEY を設定
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+詳細は [docs/DEPLOY_PLAN.md](docs/DEPLOY_PLAN.md) を参照してください。
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## ディレクトリ構成
 
-## Deploy on Vercel
+```
+src/
+├── app/                 # ページ（ホーム、カテゴリ、問題、ランダム、プロフィール）
+├── components/          # UIコンポーネント（layout, problem, feedback, dashboard, ui）
+├── data/                # カテゴリ定義 + モックデータ
+├── lib/
+│   ├── store/           # zustand ストア（問題状態、進捗管理）
+│   ├── services/        # データアクセス抽象化
+│   ├── google-sheets/   # Google Sheets API連携
+│   └── utils/           # 正解判定、スコア計算、ランダム選出 等
+└── types/               # TypeScript型定義
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## デプロイ
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+AWS Amplify Hostingへのデプロイを想定しています。
+モック状態のまま環境変数なしでデプロイ可能です。
+
+詳細は [docs/DEPLOY_PLAN.md](docs/DEPLOY_PLAN.md) を参照してください。
+
+## ドキュメント
+
+- [Phase 1 MVP 実装計画](docs/phase1-mvp-plan.md)
+- [デプロイ計画](docs/DEPLOY_PLAN.md)
+- [バックログ](BACKLOG.md)
+
+## ライセンス
+
+Private
