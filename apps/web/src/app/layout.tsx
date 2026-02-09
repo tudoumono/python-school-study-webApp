@@ -26,6 +26,15 @@ export default function RootLayout({
       <body className="bg-gray-50 min-h-screen">
         <ConfigureAmplifyClientSide />
         <ClientLayout>{children}</ClientLayout>
+        <a
+          href="https://github.com/tudoumono"
+          target="_blank"
+          rel="noreferrer"
+          aria-label="tudoumono GitHub"
+          className="fixed right-2 bottom-20 md:bottom-2 z-40 text-[10px] tracking-tight text-gray-300 opacity-55 hover:opacity-90 hover:text-gray-500 transition-colors"
+        >
+          github.com/tudoumono
+        </a>
       </body>
     </html>
   );
