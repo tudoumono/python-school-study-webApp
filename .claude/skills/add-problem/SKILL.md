@@ -1,13 +1,14 @@
 # add-problem
 
-PyPuzzle の Google スプレッドシートに問題を追加するスキル。
+PyPuzzle の Google スプレッドシートに問題・カテゴリを追加するスキル。
 
 ## 使い方
 
-ユーザーの引数を解析して問題データを生成し、スプレッドシートに追加可能な形式で出力する。
+ユーザーの引数を解析して、問題またはカテゴリのデータを生成し、スプレッドシートに追加可能な形式で出力する。
 
 引数パターン:
 - `add-problem <自然言語で問題の説明>` — 説明から問題データを生成
+- `add-problem add-category <カテゴリ名 or 説明>` — 新しいカテゴリを生成
 - `add-problem validate` — スプレッドシートの既存データを検証
 
 ---
@@ -133,17 +134,73 @@ PyPuzzle の Google スプレッドシートに問題を追加するスキル。
 
 ---
 
+## カテゴリ生成のルール（add-category）
+
+ユーザーが `add-category` を指定した場合、以下のルールでカテゴリデータを生成する。
+
+### 入力例
+- `add-problem add-category リスト` → リスト操作を学ぶカテゴリを生成
+- `add-problem add-category 文字列操作` → 文字列メソッドを学ぶカテゴリを生成
+
+### 生成ルール
+
+1. **id**: 英数字+ハイフンのケバブケース（例: `lists`, `string-methods`, `error-handling`）
+2. **title**: 日本語の短いタイトル（例: 「リスト」「文字列操作」）
+3. **description**: 日本語で1文。学習者向けの親しみやすい説明（例: 「リストの作り方と操作を覚えよう」）
+4. **icon**: lucide-react のアイコン名から適切なものを選ぶ。使用可能なアイコン例:
+   - `List` — リスト系
+   - `Type` — 文字列系
+   - `AlertTriangle` — エラー系
+   - `Braces` — 辞書/オブジェクト系
+   - `FileCode` — ファイル操作系
+   - `Package` — モジュール/import系
+   - `Database` — データ構造系
+   - 他の lucide-react アイコンも使用可能
+5. **color**: Tailwind の背景色クラス。既存カテゴリと被らないように選ぶ。使用済み:
+   - `bg-blue-500`（variables）
+   - `bg-green-500`（print-statements）
+   - `bg-purple-500`（conditionals）
+   - `bg-orange-500`（loops）
+   - `bg-pink-500`（functions）
+6. **order**: 既存カテゴリの最大 order + 1。難易度的に適切な位置に挿入する場合は既存の order を調整
+
+---
+
 ## 出力フォーマット
 
-問題を生成したら、以下の2つを出力する:
+### 問題を生成した場合
 
-### 1. スプレッドシート行データ（タブ区切り）
+以下の2つを出力する:
+
+#### 1. スプレッドシート行データ（タブ区切り）
 
 コピー&ペーストでスプレッドシートに貼れる形式。JSON列は文字列としてそのまま記載。
 
-### 2. TypeScript オブジェクト（確認用）
+#### 2. TypeScript オブジェクト（確認用）
 
 `mockProblems` 形式の Problem オブジェクトとして出力し、データが正しいか目視確認できるようにする。
+
+### カテゴリを生成した場合
+
+以下を出力する:
+
+#### 1. スプレッドシート行データ（タブ区切り）
+
+`categories` シートにコピペで貼れる形式:
+```
+id	title	description	icon	color	order
+```
+
+#### 2. 確認用テーブル
+
+| フィールド | 値 |
+|---|---|
+| id | (生成値) |
+| title | (生成値) |
+| description | (生成値) |
+| icon | (生成値) |
+| color | (生成値) |
+| order | (生成値) |
 
 ---
 
@@ -151,10 +208,17 @@ PyPuzzle の Google スプレッドシートに問題を追加するスキル。
 
 既存のスプレッドシートデータに対して以下をチェック:
 
+### problems シート
 - IDの重複がないか
-- categoryId が有効値か
+- categoryId が categories シートに存在するか
 - difficulty が有効値か
 - correctOrder の JSON が正しくパースできるか
 - CodeBlock の id が問題IDと整合しているか
 - indentLevel が意味的に正しいか（if/for/while/def の後のブロックは 1 以上か）
 - order がカテゴリ内で連番になっているか
+
+### categories シート
+- id の重複がないか
+- order の重複がないか
+- icon が lucide-react に存在するアイコン名か
+- color が有効な Tailwind クラスか
