@@ -1,38 +1,44 @@
-# PyPuzzle プロジェクト
+# PyPuzzle プロジェクト（/init）
 
 ## 概要
-Python学習Webアプリ（Duolingo形式のドラッグ＆ドロップ）
+Python 初学者向けの学習 Web アプリ。Duolingo 風のドラッグ＆ドロップ操作で、Python 基本文法を反復学習する。
 
-## 技術スタック
-- Next.js 16 + TypeScript（モノレポ: `apps/web/`）
-- Amplify Gen 2（Auth: Cognito、Data: AppSync + DynamoDB）
-- Tailwind CSS v4（`@theme inline {}` でCSS変数ベースのカスタムテーマ、`tailwind.config.ts` 不要）
-- @dnd-kit（core + sortable + utilities）
-- zustand（`persist` + `createJSONStorage(() => localStorage)` でSSR安全に永続化）
-- 問題データ: Googleスプレッドシート → API Route経由で取得
+## 現在の構成（モノレポ）
+- ルート: npm workspaces（`apps/*`, `packages/*`）
+- `apps/web`: Next.js 16 + TypeScript のフロントエンド
+- `amplify`: Amplify Gen 2 バックエンド定義（Auth/Data）
+- `docs`: 計画・仕様ドキュメント
+- `scripts`: Google Sheets 連携補助スクリプト
 
-## ディレクトリ構成
-- `apps/web/src/types/` - 型定義（problem, progress, common）
-- `apps/web/src/lib/store/` - zustandストア（problemStore, progressStore）
-- `apps/web/src/lib/services/` - データアクセス抽象化（IProblemService）
-- `apps/web/src/lib/google-sheets/` - Sheets API連携（client, parser）
-- `apps/web/src/lib/utils/` - answerChecker, shuffle, scoring, codeHash, analyticsExporter, randomPicker
-- `apps/web/src/components/` - layout, problem, feedback, dashboard, ui
-- `apps/web/src/data/categories.ts` - 静的カテゴリ定義
-- `amplify/` - Amplify Gen 2 バックエンド（auth, data）
-- `BACKLOG.md` - 将来のアイディア・バックログ
+## 主要機能（実装済み）
+- カテゴリ学習（`/categories`）
+- 問題回答（`/categories/[categoryId]/[problemId]`）
+- 苦手傾向ベースのランダム出題（`/random`）
+- 問題一覧と再取得（`/problems`）
+- プロフィール表示（`/profile`）
 
-## 設計方針
-- `blockMode: "token" | "line"` で問題の粒度を制御
-- `codeHash` でAI生成問題の重複防止（SHA-256）
-- `ProblemAttempt` にincorrectPatterns, avgTimePerAttempt等のAI活用データを蓄積
-- サービス抽象化: Phase 3でAppSync差し替え可能
+## データ取得フロー
+- `apps/web/src/app/api/problems/route.ts`:
+  - `GOOGLE_SHEETS_ID` 未設定時は `mockProblems` を返却
+  - 設定時は Google Sheets を取得（5分キャッシュ + `refresh=true` 再取得）
+- `apps/web/src/lib/services/problemService.ts`:
+  - クライアント側でも 5分キャッシュ
+  - API エラー時は直近キャッシュをフォールバック返却
 
-## コーディング規約
+## バックエンド（Amplify Gen 2）
+- `amplify/auth/resource.ts`: メールログイン有効化
+- `amplify/data/resource.ts`: `Problem`, `ProblemAttempt`, `UserProgress` スキーマ定義
+- `apps/web/src/components/ConfigureAmplify.tsx`:
+  - `amplify_outputs.json` が空でない場合のみ `Amplify.configure()`
+
+## 開発コマンド
+- 依存インストール: `npm install`（ルート）
+- 開発: `npm run dev --workspace apps/web`
+- Lint: `npm run lint --workspace apps/web`
+- Build: `npm run build --workspace apps/web`
+
+## 開発ルール
 - 日本語でコミュニケーション
-- コンポーネントは `"use client"` 明示
-- 新ファイルよりも既存ファイルの編集を優先
-- Tailwind CSS v4の書き方に従う（v3のconfig形式は使わない）
-
-## 注意事項
-- Next.js 16で`create-next-app`する際、ディレクトリ名に大文字があるとnpm naming restrictionエラー。`/tmp`で作成してコピーで回避
+- 既存構造を優先して編集し、不要な新規ファイル追加は避ける
+- hooks やブラウザ API を使うコンポーネントでは `"use client"` を明示
+- Tailwind CSS v4 の記法を使用（v3 用 config 前提の書き方は避ける）
