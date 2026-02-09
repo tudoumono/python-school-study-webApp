@@ -75,6 +75,7 @@ applications:
 
 モック状態ではGoogle Sheets連携不要。環境変数の設定なしでデプロイ可能。
 API Route (`/api/problems`) はenv未設定時にモックデータを自動返却する。
+`/api/learning-events` も同様に、env未設定時はモック動作（ログ追記はno-op）。
 
 ### 5. 確認事項
 
@@ -123,6 +124,7 @@ Amplify Console → **Environment variables** で以下を設定:
 |--------|-----|
 | `GOOGLE_SHEETS_ID` | スプレッドシートID |
 | `GOOGLE_SERVICE_ACCOUNT_KEY` | サービスアカウントのJSON鍵（1行のJSON文字列） |
+| `GOOGLE_ATTEMPT_LOG_SHEET_NAME` | 学習ログシート名（任意、既定: `attempt_logs`） |
 
 ---
 

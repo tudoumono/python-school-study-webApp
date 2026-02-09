@@ -10,6 +10,7 @@ Duolingo形式のドラッグ＆ドロップでPythonの基礎文法を学べる
 - **5カテゴリ × 4問 = 20問** — 変数、print文、条件分岐、ループ、関数をカバー
 - **ニガテ問題集** — 過去の回答傾向から苦手な問題を自動ピックアップ
 - **進捗の自動保存** — ブラウザのlocalStorageに学習データを永続化
+- **学習ログの共有** — 解答ログをGoogleスプレッドシートに追記し、講師が集計を確認可能
 - **モバイルファースト** — スマホでの操作に最適化したUI
 
 ## スクリーンショット
@@ -47,10 +48,17 @@ npm run dev
 
 ```bash
 cp .env.example .env.local
-# GOOGLE_SHEETS_ID と GOOGLE_SERVICE_ACCOUNT_KEY を設定
+# GOOGLE_SHEETS_ID / GOOGLE_SERVICE_ACCOUNT_KEY を設定
+# （任意）GOOGLE_ATTEMPT_LOG_SHEET_NAME を設定
 ```
 
-詳細は [docs/DEPLOY_PLAN.md](docs/DEPLOY_PLAN.md) を参照してください。
+シートの初期化:
+
+```bash
+node scripts/setup-sheet.mjs
+```
+
+詳細は [docs/LEARNING_DATA_SHEETS.md](docs/LEARNING_DATA_SHEETS.md) と [docs/DEPLOY_PLAN.md](docs/DEPLOY_PLAN.md) を参照してください。
 
 ## ディレクトリ構成
 
@@ -78,6 +86,7 @@ AWS Amplify Hostingへのデプロイを想定しています。
 
 - [Phase 1 MVP 実装計画](docs/phase1-mvp-plan.md)
 - [デプロイ計画](docs/DEPLOY_PLAN.md)
+- [学習データのGoogle Sheets運用](docs/LEARNING_DATA_SHEETS.md)
 - [バックログ](BACKLOG.md)
 
 ## ライセンス
