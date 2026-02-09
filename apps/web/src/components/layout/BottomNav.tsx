@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, LayoutGrid, Shuffle, User } from "lucide-react";
+import { Home, LayoutGrid, List, Shuffle, User } from "lucide-react";
 import clsx from "clsx";
 
 const navItems = [
   { href: "/", icon: Home, label: "ホーム" },
   { href: "/categories", icon: LayoutGrid, label: "カテゴリ" },
+  { href: "/problems", icon: List, label: "問題一覧" },
   { href: "/random", icon: Shuffle, label: "ランダム" },
   { href: "/profile", icon: User, label: "プロフィール" },
 ];

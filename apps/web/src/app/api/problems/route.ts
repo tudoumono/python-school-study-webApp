@@ -44,8 +44,9 @@ export async function GET(request: NextRequest) {
     }
 
     // 本番モード: Google Sheets から取得
+    const refresh = request.nextUrl.searchParams.get("refresh") === "true";
     const now = Date.now();
-    if (!cache || now - cache.fetchedAt > CACHE_TTL) {
+    if (!cache || refresh || now - cache.fetchedAt > CACHE_TTL) {
       const problems = await fetchProblemsFromSheet();
       cache = { problems, fetchedAt: now };
     }

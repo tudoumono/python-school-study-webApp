@@ -1,49 +1,55 @@
 # Repository Guidelines
 
 ## プロジェクト構成とモジュール配置
-アプリ本体は `src/` 配下にあります。
-- `src/app/`: Next.js App Router のページと API ルート（例: `src/app/api/problems/route.ts`）
-- `src/components/`: UI/機能コンポーネント（`layout`、`problem`、`feedback`、`dashboard`、`ui`）
-- `src/lib/`: 共通ロジック（`store`、`services`、`google-sheets`、`utils`）
-- `src/data/`: カテゴリ定義とモック問題データ
-- `src/types/`: TypeScript の型定義
+このリポジトリはモノレポ構成です。
+- `apps/web/`: フロントエンド本体（Next.js 16, App Router, TypeScript）
+- `apps/web/src/app/`: ページと API ルート（例: `apps/web/src/app/api/problems/route.ts`）
+- `apps/web/src/components/`: UI/機能コンポーネント（`layout`、`problem`、`feedback` など）
+- `apps/web/src/lib/`: 共通ロジック（`store`、`services`、`google-sheets`、`utils`）
+- `amplify/`: Amplify Gen 2 バックエンド定義（Auth/Data）
+- `docs/`: 計画・設計ドキュメント、`scripts/`: シート連携補助スクリプト
 
-静的ファイルは `public/`（フォントは `public/fonts/`）、設計資料は `docs/` に配置します。
+静的アセットは `apps/web/public/` に配置します。
+
+## アーキテクチャ概要
+- フロントエンドは `apps/web` の Next.js App Router で提供し、状態管理は zustand を使用します。
+- バックエンドは Amplify Gen 2（`amplify/`）で定義し、フロントからは API ルート経由または Amplify 経由でデータを扱います。
 
 ## ビルド・テスト・開発コマンド
-- `npm install`: 依存関係をインストール
-- `npm run dev`: 開発サーバー起動（`http://localhost:3000`）
-- `npm run lint`: ESLint 実行（Next.js core-web-vitals + TypeScript ルール）
-- `npm run build`: 本番ビルド作成
-- `npm run start`: ビルド済みアプリを起動
+- 依存インストール（ルート）: `npm install`
+- 開発サーバー: `npm run dev --workspace apps/web`
+- Lint: `npm run lint --workspace apps/web`
+- 本番ビルド: `npm run build --workspace apps/web`
+- 本番起動: `npm run start --workspace apps/web`
 
-Google Sheets 連携を使う場合のみ `cp .env.example .env.local` を実行し、`GOOGLE_SHEETS_ID` と `GOOGLE_SERVICE_ACCOUNT_KEY` を設定してください。
+別方法として `cd apps/web && npm run dev` でも実行できます。Google Sheets 連携時のみ `apps/web/.env.local` に `GOOGLE_SHEETS_ID` / `GOOGLE_SERVICE_ACCOUNT_KEY` を設定してください。
 
 ## コーディング規約と命名
-- TypeScript は `strict: true` を前提に実装する
-- インデントは 2 スペース、文字列はダブルクォート、文末はセミコロンで統一
-- コンポーネントファイルは `PascalCase`（例: `CategoryCard.tsx`）
-- ユーティリティ・サービス・ストアは `camelCase`（例: `problemService.ts`）
-- App Router のフォルダは小文字、動的セグメントは `[param]` 形式
-- import は深い相対パスより `@/*` エイリアスを優先
+- TypeScript は `strict: true` 前提で実装
+- インデント 2 スペース、ダブルクォート、セミコロンを既存コードに合わせて維持
+- コンポーネントは `PascalCase`、ユーティリティ/ストアは `camelCase`
+- App Router は小文字ディレクトリ、動的ルートは `[param]`
+- `apps/web/tsconfig.json` の `@/*` エイリアスを優先して import
 
 ## テスト方針
 現状 `npm test` は未定義です。PR 前に最低限以下を実施してください。
-1. `npm run lint` を通す
-2. `/`、`/categories`、問題回答画面、`/random` の主要導線を手動確認する
+1. `npm run lint --workspace apps/web`
+2. `/`、`/categories`、`/problems`、`/random` の主要導線を手動確認
 
-`src/lib/utils` やデータ変換処理など、ロジックが増える変更では `*.test.ts` / `*.test.tsx` のユニットテスト追加を推奨します。
+ロジック追加時は `apps/web/src` 配下で `*.test.ts` / `*.test.tsx` のユニットテストを同階層または近接配置で追加してください。
 
 ## コミット・PRルール
 - コミットは 1 変更 1 目的で小さく保つ
 - 件名は `<type>: <summary>` 形式を推奨（`feat`、`fix`、`docs`、`refactor`、`chore`）
+- 実績のある形式: `feat: モノレポ構成 + Amplify Gen 2 バックエンド追加`
 
 PR には以下を含めてください。
 1. 変更内容と目的
-2. 確認手順（実行コマンドと手動確認項目）
+2. 確認手順（実行コマンド + 手動確認項目）
 3. UI 変更時のスクリーンショットまたは GIF
-4. 関連 Issue / バックログ項目へのリンク
+4. 関連 Issue / `BACKLOG.md` 項目へのリンク
 
 ## セキュリティと設定
-- `.env.local` の秘密情報はコミットしない
-- 環境変数が未設定の場合はモックデータで動かし、必要時のみ Google Sheets 認証情報を有効化する
+- `apps/web/.env.local` を含む秘密情報はコミットしない
+- `.env*` は原則 Git 管理外。共有が必要な項目は `.env.example` にキー名のみ追加
+- CI では `amplify_outputs.json` のプレースホルダーが生成されるため、機密値を埋め込まない

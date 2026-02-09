@@ -6,7 +6,7 @@ import { CategoryCard } from "@/components/dashboard/CategoryCard";
 import { useProgressStore } from "@/lib/store/progressStore";
 import { problemService } from "@/lib/services/problemService";
 import { Card } from "@/components/ui/Card";
-import { Flame, Target, Trophy, Shuffle } from "lucide-react";
+import { Flame, Target, Trophy, Shuffle, FileSpreadsheet } from "lucide-react";
 import Link from "next/link";
 
 export default function Home() {
@@ -76,30 +76,52 @@ export default function Home() {
         </Card>
       </div>
 
-      {/* 学習を続けるボタン */}
-      <Link href="/categories">
-        <div className="bg-primary-600 text-white rounded-2xl p-4 text-center active:bg-primary-700 transition-colors">
-          <span className="text-lg font-bold">学習をはじめる</span>
-          <p className="text-sm text-primary-100 mt-1">
-            カテゴリを選んで問題に挑戦しよう
-          </p>
-        </div>
-      </Link>
+      {/* アクションカード */}
+      <div className="flex flex-col gap-5">
+        <Link href="/categories">
+          <div className="bg-primary-600 text-white rounded-2xl p-4 flex items-center gap-4 active:bg-primary-700 transition-colors">
+            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+              <Target size={22} />
+            </div>
+            <div>
+              <span className="text-lg font-bold">学習をはじめる</span>
+              <p className="text-sm text-primary-100 mt-0.5">
+                カテゴリを選んで問題に挑戦しよう
+              </p>
+            </div>
+          </div>
+        </Link>
 
-      {/* ニガテ問題に挑戦 */}
-      <Link href="/random">
-        <div className="bg-orange-500 text-white rounded-2xl p-4 flex items-center gap-4 active:bg-orange-600 transition-colors">
-          <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-            <Shuffle size={22} />
+
+        <Link href="/random">
+          <div className="bg-orange-500 text-white rounded-2xl p-4 flex items-center gap-4 active:bg-orange-600 transition-colors">
+            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+              <Shuffle size={22} />
+            </div>
+            <div>
+              <span className="text-lg font-bold">ニガテ問題に挑戦</span>
+              <p className="text-sm text-orange-100 mt-0.5">
+                苦手傾向から5問をピックアップ
+              </p>
+            </div>
           </div>
-          <div>
-            <span className="text-lg font-bold">ニガテ問題に挑戦</span>
-            <p className="text-sm text-orange-100 mt-0.5">
-              苦手傾向から5問をピックアップ
-            </p>
+        </Link>
+
+
+        <Link href="/problems">
+          <div className="bg-emerald-600 text-white rounded-2xl p-4 flex items-center gap-4 active:bg-emerald-700 transition-colors">
+            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+              <FileSpreadsheet size={22} />
+            </div>
+            <div>
+              <span className="text-lg font-bold">問題一覧</span>
+              <p className="text-sm text-emerald-100 mt-0.5">
+                スプレッドシートの問題データを確認
+              </p>
+            </div>
           </div>
-        </div>
-      </Link>
+        </Link>
+      </div>
 
       {/* カテゴリ一覧 */}
       <div>

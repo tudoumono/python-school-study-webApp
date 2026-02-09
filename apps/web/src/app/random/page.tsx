@@ -9,7 +9,8 @@ import { pickWeakProblems } from "@/lib/utils/randomPicker";
 import type { Problem } from "@/types/problem";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Shuffle, ArrowLeft } from "lucide-react";
+import { Shuffle } from "lucide-react";
+import { Breadcrumb } from "@/components/ui/Breadcrumb";
 
 const RANDOM_COUNT = 5;
 
@@ -48,12 +49,8 @@ export default function RandomPage() {
 
   return (
     <div className="py-4 space-y-6">
-      <div className="flex items-center gap-2">
-        <Link href="/" className="text-gray-400 hover:text-gray-600">
-          <ArrowLeft size={22} />
-        </Link>
-        <h1 className="text-xl font-bold text-gray-800">ニガテ問題に挑戦</h1>
-      </div>
+      <Breadcrumb items={[{ label: "ホーム", href: "/" }, { label: "ランダム" }]} />
+      <h1 className="text-xl font-bold text-gray-800">ニガテ問題に挑戦</h1>
 
       <Card padding="lg">
         <div className="flex items-center gap-3 mb-4">

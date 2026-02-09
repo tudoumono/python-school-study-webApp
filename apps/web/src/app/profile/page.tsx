@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { ProgressBar } from "@/components/layout/ProgressBar";
 import { Trophy, Flame, Target, Download } from "lucide-react";
+import { Breadcrumb } from "@/components/ui/Breadcrumb";
 
 export default function ProfilePage() {
   const progress = useProgressStore();
@@ -19,6 +20,7 @@ export default function ProfilePage() {
 
   return (
     <div className="py-4 space-y-6">
+      <Breadcrumb items={[{ label: "ホーム", href: "/" }, { label: "プロフィール" }]} />
       <h1 className="text-xl font-bold text-gray-800">プロフィール</h1>
 
       {/* レベル */}
