@@ -1,16 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { mockProblems } from "@/data/mockProblems";
 import type { Problem } from "@/types/problem";
+import { isSheetsMockMode } from "@/lib/google-sheets/config";
 
 export type ProblemsResponse = {
   data: Problem[];
   source: "mock" | "sheets";
   error?: string;
 };
-
-const isMockMode =
-  !process.env.GOOGLE_SHEETS_ID ||
-  process.env.GOOGLE_SHEETS_ID === "your_spreadsheet_id_here";
 
 let cache: { problems: Problem[]; fetchedAt: number } | null = null;
 const CACHE_TTL = 5 * 60 * 1000;
@@ -43,6 +40,7 @@ function filterByCategory(problems: Problem[], category: string | null) {
 
 export async function GET(request: NextRequest) {
   const category = request.nextUrl.searchParams.get("category");
+  const isMockMode = isSheetsMockMode();
 
   try {
     // モックモード: スプレッドシート未設定時

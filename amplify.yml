@@ -6,6 +6,11 @@ applications:
         preBuild:
           commands:
             - '[ -f amplify_outputs.json ] || echo "{}" > amplify_outputs.json'
+            - rm -f .env.production
+            - touch .env.production
+            - '[ -n "${GOOGLE_SHEETS_ID:-}" ] && printf "GOOGLE_SHEETS_ID=%s\n" "$GOOGLE_SHEETS_ID" >> .env.production || true'
+            - '[ -n "${GOOGLE_SERVICE_ACCOUNT_KEY:-}" ] && printf "GOOGLE_SERVICE_ACCOUNT_KEY=%s\n" "$GOOGLE_SERVICE_ACCOUNT_KEY" >> .env.production || true'
+            - '[ -n "${GOOGLE_ATTEMPT_LOG_SHEET_NAME:-}" ] && printf "GOOGLE_ATTEMPT_LOG_SHEET_NAME=%s\n" "$GOOGLE_ATTEMPT_LOG_SHEET_NAME" >> .env.production || true'
             - npm ci
         build:
           commands:

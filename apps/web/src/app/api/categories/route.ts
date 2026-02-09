@@ -1,16 +1,13 @@
 import { NextResponse } from "next/server";
 import { categories as mockCategories } from "@/data/categories";
 import type { Category } from "@/types/problem";
+import { isSheetsMockMode } from "@/lib/google-sheets/config";
 
 export type CategoriesResponse = {
   data: Category[];
   source: "mock" | "sheets";
   error?: string;
 };
-
-const isMockMode =
-  !process.env.GOOGLE_SHEETS_ID ||
-  process.env.GOOGLE_SHEETS_ID === "your_spreadsheet_id_here";
 
 let cache: { categories: Category[]; fetchedAt: number } | null = null;
 const CACHE_TTL = 5 * 60 * 1000;
@@ -36,6 +33,8 @@ async function fetchCategoriesFromSheet(): Promise<Category[]> {
 }
 
 export async function GET() {
+  const isMockMode = isSheetsMockMode();
+
   try {
     if (isMockMode) {
       return NextResponse.json<CategoriesResponse>({

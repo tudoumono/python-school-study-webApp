@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { sheets_v4 } from "googleapis";
 import type { CategoryId } from "@/types/problem";
+import { isSheetsMockMode } from "@/lib/google-sheets/config";
 
 export type LearningEventRequest = {
   userId: string;
@@ -20,12 +21,8 @@ export type LearningEventResponse = {
   error?: string;
 };
 
-const isMockMode =
-  !process.env.GOOGLE_SHEETS_ID ||
-  process.env.GOOGLE_SHEETS_ID === "your_spreadsheet_id_here";
-
 const ATTEMPT_LOG_SHEET_NAME =
-  process.env.GOOGLE_ATTEMPT_LOG_SHEET_NAME || "attempt_logs";
+  process.env["GOOGLE_ATTEMPT_LOG_SHEET_NAME"] || "attempt_logs";
 
 const ATTEMPT_LOG_HEADERS: string[] = [
   "loggedAt",
@@ -160,6 +157,8 @@ async function appendLearningEvent(event: LearningEventRequest): Promise<void> {
 }
 
 export async function POST(request: NextRequest) {
+  const isMockMode = isSheetsMockMode();
+
   try {
     let jsonBody: unknown;
     try {
