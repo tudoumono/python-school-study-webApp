@@ -6,6 +6,9 @@ applications:
         preBuild:
           commands:
             - '[ -f amplify_outputs.json ] || echo "{}" > amplify_outputs.json'
+            # --- .env.production 生成 ---
+            # Next.js API Route (SSR) のランタイムで必要な環境変数をここに追加すること。
+            # Amplify Console の Environment variables だけでは SSR ランタイムに渡らない場合がある。
             - rm -f .env.production
             - touch .env.production
             - '[ -n "${GOOGLE_SHEETS_ID:-}" ] && printf "GOOGLE_SHEETS_ID=%s\n" "$GOOGLE_SHEETS_ID" >> .env.production || true'
