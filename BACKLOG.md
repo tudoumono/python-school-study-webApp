@@ -1,6 +1,6 @@
 # PyPuzzle バックログ
 
-## 実施済み（2026-02-09T19:45:00）
+## 実施済み（2026-02-09）
 
 - [x] Google Sheets から問題データ取得（API Route + 5分キャッシュ）
 - [x] 問題一覧ページ（`/problems`）
@@ -14,12 +14,14 @@
 - [x] 集計シート自動生成（`daily_stats`, `student_stats`, `category_stats` QUERY式）
 - [x] モノレポ構成（`apps/web/` + `amplify/`）
 - [x] Amplify Gen 2 バックエンド定義（Auth/Data スキーマ）
-
-## 未コミット（要対応）
-
-- [ ] 学習ログ関連の未コミットファイルをコミット（`learning-events/route.ts`, `learningEventService.ts`, `LEARNING_DATA_SHEETS.md` 等）
+- [x] Amplify SSR 環境変数修正（`.env.production` 生成 + mock判定のランタイム化）
 
 ## 直近の改善（優先度: 高）
+
+### Amplify 環境での Google Sheets 接続確認
+- `.env.production` 生成対応済み（`amplify.yml` preBuild）
+- デプロイ後に `/api/problems?refresh=true` で `"source":"sheets"` を確認すること
+- 環境変数（`GOOGLE_SERVICE_ACCOUNT_KEY`）の改行処理に注意
 
 ### カテゴリアイコンの動的レンダリング
 - `CategoryCard.tsx` の `iconMap` が5アイコンしか定義されていない
@@ -30,11 +32,6 @@
 - 現在カテゴリあたり4問（合計20問）しかない
 - 学習効果を出すには各カテゴリ10問以上が望ましい
 - `add-problem` スキルを活用してスプレッドシートに追加
-
-### Amplify 環境での Google Sheets 接続確認
-- デプロイ済みだが接続未確認の状態
-- 環境変数（`GOOGLE_SERVICE_ACCOUNT_KEY`）の改行処理に注意
-- トップ画面のデータソース表示で切り分け可能
 
 ## 問題形式の拡張
 
