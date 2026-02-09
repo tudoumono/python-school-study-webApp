@@ -1,0 +1,13 @@
+{
+  "name": "pypuzzle-amplify",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@aws-amplify/backend": "^1.0.0",
+    "@aws-amplify/backend-auth": "^1.0.0",
+    "@aws-amplify/backend-data": "^1.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}

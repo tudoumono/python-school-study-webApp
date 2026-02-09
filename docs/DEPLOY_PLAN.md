@@ -1,70 +1,82 @@
-# PyPuzzle Amplify デプロイ計画
+# PyPuzzle デプロイ計画（モノレポ + Amplify Gen 2）
 
 ## 現在の状態
 
-- Next.js 16.1.6 アプリ（モック状態で動作確認済み）
+- Next.js 16.1.6 アプリ（モノレポ構成: `apps/web/`）
 - `npm run build` 成功済み
-- データ: モックデータ（`src/data/mockProblems.ts`）でフロントエンド完全動作
+- データ: モックデータ（`apps/web/src/data/mockProblems.ts`）でフロントエンド完全動作
 - Google Sheets連携: API Route実装済み（env未設定時は自動でモックにフォールバック）
-- 認証: なし（パブリックアクセス）
-- バックエンド: なし（クライアントサイド + API Route のみ）
+- 認証: Amplify Gen 2 (Cognito) — メール＋パスワード認証
+- バックエンド: Amplify Gen 2 (AppSync + DynamoDB)
 
-## ゴール
+## 構成
 
-モック状態のままAWS Amplifyにデプロイし、公開URLでアクセスできるようにする。
+```
+pypuzzle-monorepo/
+├── apps/web/                 # Next.js フロントエンド
+│   ├── src/
+│   ├── public/
+│   ├── package.json
+│   ├── next.config.ts
+│   ├── tsconfig.json
+│   └── amplify_outputs.json  # 自動生成（.gitignore対象）
+├── amplify/                  # Amplify Gen 2 バックエンド
+│   ├── backend.ts
+│   ├── auth/resource.ts      # Cognito 認証
+│   ├── data/resource.ts      # AppSync + DynamoDB スキーマ
+│   ├── package.json
+│   └── tsconfig.json
+├── amplify.yml               # Amplify ビルド設定
+├── package.json              # npm workspaces ルート
+└── docs/, BACKLOG.md, README.md
+```
 
 ---
 
-## Phase 1: Amplify Hosting にデプロイ（モック状態）
+## デプロイ手順
 
-### 1-1. 前提準備
+### 1. 前提準備
 
-- [ ] GitHubリポジトリを作成してpush
+- [ ] GitHubリポジトリにpush済み
 - [ ] AWSアカウントでAmplify Consoleにアクセスできること
 
-### 1-2. Amplify Console 設定
+### 2. Amplify Console 設定
 
-1. **Amplify Console** → **New app** → **Host web app**
-2. **GitHub** リポジトリを接続
-3. **Branch**: `main`
-4. **Build settings**: 自動検出（Next.js）
+1. **Amplify Console** → **Create new app** → **GitHub** リポジトリを接続
+2. **Branch**: `main`
+3. **App settings**: Amplify が `amplify/` ディレクトリを自動検出 → Gen 2 バックエンドが有効化
+4. **Build settings**: `amplify.yml` を自動検出（モノレポ `appRoot: apps/web`）
 
-### 1-3. amplify.yml（ビルド設定）
+### 3. ビルド設定（amplify.yml）
 
 ```yaml
 version: 1
-frontend:
-  phases:
-    preBuild:
-      commands:
-        - npm ci
-    build:
-      commands:
-        - npm run build
-  artifacts:
-    baseDirectory: .next
-    files:
-      - '**/*'
-  cache:
-    paths:
-      - node_modules/**/*
-      - .next/cache/**/*
+applications:
+  - appRoot: apps/web
+    frontend:
+      phases:
+        preBuild:
+          commands:
+            - npm ci
+        build:
+          commands:
+            - npm run build
+      artifacts:
+        baseDirectory: .next
+        files:
+          - '**/*'
+      cache:
+        paths:
+          - node_modules/**/*
+          - .next/cache/**/*
 ```
 
-### 1-4. 環境変数
+### 4. 環境変数
 
 モック状態ではGoogle Sheets連携不要。環境変数の設定なしでデプロイ可能。
 API Route (`/api/problems`) はenv未設定時にモックデータを自動返却する。
 
-```typescript
-// src/app/api/problems/route.ts の挙動
-const isMockMode =
-  !process.env.GOOGLE_SHEETS_ID ||
-  process.env.GOOGLE_SHEETS_ID === "your_spreadsheet_id_here";
-// → env未設定 → mockProblems を返す
-```
-
-### 1-5. 確認事項
+### 5. 確認事項
 
 - [ ] デプロイ成功（ビルドログでエラーなし）
 - [ ] 公開URLでホームが表示される
@@ -74,87 +86,52 @@ const isMockMode =
 - [ ] AppHeaderのロゴからホームに戻れる
 - [ ] モバイルでの表示・操作が正常
 
-### 1-6. 注意点
+### 6. 注意点
 
 | 項目 | 対応 |
 |------|------|
-| Next.js 16対応 | Amplifyは最新Next.jsをSSRサポート。問題なし |
+| Next.js 16対応 | Amplifyは最新Next.jsをSSRサポート |
 | `.env.local` | gitignore済み。Amplifyには含まれない |
 | API Route | Server-side実行。Amplify SSRモードで動作 |
 | zustand persist | `localStorage` 使用。クライアントサイドのみ。問題なし |
 | Tailwind CSS v4 | ビルド時にCSSに変換。ランタイム依存なし |
+| `amplify_outputs.json` | sandbox/デプロイ時に自動生成。`.gitignore` 対象 |
 
 ---
 
-## Phase 2: Google Sheets連携の有効化（任意）
+## Amplify Gen 2 バックエンドリソース
 
-Phase 1 完了後、実データに切り替える場合:
+### 認証（Cognito）
 
-### 2-1. Google Cloud 設定
+- メール＋パスワード認証
+- 設定: `amplify/auth/resource.ts`
 
-1. Google Cloud Console → プロジェクト作成
-2. Google Sheets API を有効化
-3. サービスアカウントを作成
-4. JSONキーをダウンロード
-5. 対象スプレッドシートをサービスアカウントのメールアドレスに共有（閲覧者）
+### データ（AppSync + DynamoDB）
 
-### 2-2. Amplify 環境変数の設定
+- `Problem`: 問題データ（認証ユーザーは読み書き可、ゲストは読み取りのみ）
+- `ProblemAttempt`: 解答履歴（オーナーのみアクセス可）
+- `UserProgress`: ユーザー進捗（オーナーのみアクセス可）
+- 設定: `amplify/data/resource.ts`
 
-Amplify Console → **Environment variables**:
+---
+
+## Google Sheets連携の有効化（任意）
+
+Amplify Console → **Environment variables** で以下を設定:
 
 | 変数名 | 値 |
 |--------|-----|
-| `GOOGLE_SHEETS_ID` | スプレッドシートID（URLの`/d/`と`/edit`の間の文字列） |
+| `GOOGLE_SHEETS_ID` | スプレッドシートID |
 | `GOOGLE_SERVICE_ACCOUNT_KEY` | サービスアカウントのJSON鍵（1行のJSON文字列） |
 
-### 2-3. スプレッドシートのフォーマット
-
-シート名: `problems`、範囲: `A:P`
-
-| 列 | 内容 | 形式 |
-|----|------|------|
-| A | id | `var-001` |
-| B | categoryId | `variables` |
-| C | difficulty | `beginner` / `easy` / `medium` / `hard` |
-| D | order | 数値 |
-| E | title | テキスト |
-| F | description | テキスト |
-| G | blockMode | `token` / `line` |
-| H | correctOrder | JSON配列 |
-| I | distractors | JSON配列（空可） |
-| J | hints | JSON配列 |
-| K | points | 数値 |
-| L | explanation | テキスト |
-| M | tags | JSON配列 |
-| N | source | `manual` / `ai-generated` |
-| O | codeHash | テキスト（空可） |
-| P | expectedOutput | テキスト（空可） |
-
 ---
 
-## Phase 3: 将来の拡張（バックエンド導入時）
+## Sandbox 開発
 
-Amplify Gen2 + AppSync / DynamoDB への移行。バックログの以下が前提:
-- 集団統計ベースの出題
-- クラス管理ダッシュボード
-- ユーザー認証（Cognito）
-
-この段階で `IProblemService` インターフェースを AppSync 実装に差し替える。
-
----
-
-## クイックスタート（Phase 1 最短手順）
+ローカル開発時は Amplify sandbox を使用:
 
 ```bash
-# 1. GitHubにpush
-git init
-git add -A
-git commit -m "Initial commit: PyPuzzle v0.1.0"
-git remote add origin https://github.com/<your-user>/pypuzzle.git
-git push -u origin main
-
-# 2. Amplify Consoleで接続
-# AWS Console → Amplify → New app → GitHub → main branch → Deploy
-
-# 3. 完了！ モックデータで動作するURLが発行される
+npx ampx sandbox
 ```
+
+これにより `amplify_outputs.json` が自動生成され、ローカルのフロントエンドから Amplify バックエンドに接続できる。

@@ -4,20 +4,22 @@
 Python学習Webアプリ（Duolingo形式のドラッグ＆ドロップ）
 
 ## 技術スタック
-- Next.js 16 + TypeScript
+- Next.js 16 + TypeScript（モノレポ: `apps/web/`）
+- Amplify Gen 2（Auth: Cognito、Data: AppSync + DynamoDB）
 - Tailwind CSS v4（`@theme inline {}` でCSS変数ベースのカスタムテーマ、`tailwind.config.ts` 不要）
 - @dnd-kit（core + sortable + utilities）
 - zustand（`persist` + `createJSONStorage(() => localStorage)` でSSR安全に永続化）
 - 問題データ: Googleスプレッドシート → API Route経由で取得
 
 ## ディレクトリ構成
-- `src/types/` - 型定義（problem, progress, common）
-- `src/lib/store/` - zustandストア（problemStore, progressStore）
-- `src/lib/services/` - データアクセス抽象化（IProblemService）
-- `src/lib/google-sheets/` - Sheets API連携（client, parser）
-- `src/lib/utils/` - answerChecker, shuffle, scoring, codeHash, analyticsExporter, randomPicker
-- `src/components/` - layout, problem, feedback, dashboard, ui
-- `src/data/categories.ts` - 静的カテゴリ定義
+- `apps/web/src/types/` - 型定義（problem, progress, common）
+- `apps/web/src/lib/store/` - zustandストア（problemStore, progressStore）
+- `apps/web/src/lib/services/` - データアクセス抽象化（IProblemService）
+- `apps/web/src/lib/google-sheets/` - Sheets API連携（client, parser）
+- `apps/web/src/lib/utils/` - answerChecker, shuffle, scoring, codeHash, analyticsExporter, randomPicker
+- `apps/web/src/components/` - layout, problem, feedback, dashboard, ui
+- `apps/web/src/data/categories.ts` - 静的カテゴリ定義
+- `amplify/` - Amplify Gen 2 バックエンド（auth, data）
 - `BACKLOG.md` - 将来のアイディア・バックログ
 
 ## 設計方針
