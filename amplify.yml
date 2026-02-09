@@ -5,6 +5,7 @@ applications:
       phases:
         preBuild:
           commands:
+            - '[ -f amplify_outputs.json ] || echo "{}" > amplify_outputs.json'
             - npm ci
         build:
           commands:
