@@ -31,9 +31,12 @@ export default function ProblemsPage() {
     try {
       const url = refresh ? "/api/problems?refresh=true" : "/api/problems";
       const res = await fetch(url);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data: Problem[] = await res.json();
-      setProblems(data);
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `HTTP ${res.status}`);
+      }
+      const { data } = await res.json();
+      setProblems(data as Problem[]);
       setLastFetched(new Date());
     } catch (e) {
       setError(e instanceof Error ? e.message : "取得に失敗しました");

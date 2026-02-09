@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { mockProblems } from "@/data/mockProblems";
 import type { Problem } from "@/types/problem";
 
+export type ProblemsResponse = {
+  data: Problem[];
+  source: "mock" | "sheets";
+  error?: string;
+};
+
 const isMockMode =
   !process.env.GOOGLE_SHEETS_ID ||
   process.env.GOOGLE_SHEETS_ID === "your_spreadsheet_id_here";
@@ -30,17 +36,21 @@ async function fetchProblemsFromSheet(): Promise<Problem[]> {
   return parseRows(rows as string[][]);
 }
 
+function filterByCategory(problems: Problem[], category: string | null) {
+  if (!category) return problems;
+  return problems.filter((p) => p.categoryId === category);
+}
+
 export async function GET(request: NextRequest) {
+  const category = request.nextUrl.searchParams.get("category");
+
   try {
     // モックモード: スプレッドシート未設定時
     if (isMockMode) {
-      const { searchParams } = request.nextUrl;
-      const category = searchParams.get("category");
-      let results = mockProblems;
-      if (category) {
-        results = results.filter((p) => p.categoryId === category);
-      }
-      return NextResponse.json(results);
+      return NextResponse.json<ProblemsResponse>({
+        data: filterByCategory(mockProblems, category),
+        source: "mock",
+      });
     }
 
     // 本番モード: Google Sheets から取得
@@ -51,24 +61,18 @@ export async function GET(request: NextRequest) {
       cache = { problems, fetchedAt: now };
     }
 
-    const { searchParams } = request.nextUrl;
-    const category = searchParams.get("category");
-
-    let results = cache.problems;
-    if (category) {
-      results = results.filter((p) => p.categoryId === category);
-    }
-
-    return NextResponse.json(results);
+    return NextResponse.json<ProblemsResponse>({
+      data: filterByCategory(cache.problems, category),
+      source: "sheets",
+    });
   } catch (error) {
-    console.error("Failed to fetch problems:", error);
+    const message =
+      error instanceof Error ? error.message : "Unknown error";
+    console.error("Failed to fetch problems:", message);
 
-    // エラー時はモックデータにフォールバック
-    const category = request.nextUrl.searchParams.get("category");
-    let results = cache?.problems ?? mockProblems;
-    if (category) {
-      results = results.filter((p) => p.categoryId === category);
-    }
-    return NextResponse.json(results);
+    return NextResponse.json<ProblemsResponse>(
+      { data: [], source: isMockMode ? "mock" : "sheets", error: message },
+      { status: 500 }
+    );
   }
 }

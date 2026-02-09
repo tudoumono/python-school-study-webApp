@@ -6,25 +6,38 @@ import { CategoryCard } from "@/components/dashboard/CategoryCard";
 import { useProgressStore } from "@/lib/store/progressStore";
 import { problemService } from "@/lib/services/problemService";
 import { Card } from "@/components/ui/Card";
-import { Flame, Target, Trophy, Shuffle, FileSpreadsheet } from "lucide-react";
+import { Flame, Target, Trophy, Shuffle, FileSpreadsheet, Info } from "lucide-react";
 import Link from "next/link";
+import type { ProblemsResponse } from "@/app/api/problems/route";
 
 export default function Home() {
   const progress = useProgressStore();
   const [isLoaded, setIsLoaded] = useState(false);
+  const [dataSource, setDataSource] = useState<"mock" | "sheets" | "error" | null>(null);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   useEffect(() => {
     setIsLoaded(true);
-    // 問題データからカテゴリの総数を更新
-    problemService.getAllProblems().then((problems) => {
-      for (const cat of categories) {
-        const catProblems = problems.filter((p) => p.categoryId === cat.id);
-        const maxPoints = catProblems.reduce((sum, p) => sum + p.points, 0);
-        progress.updateCategoryTotals(cat.id, catProblems.length, maxPoints);
-      }
-    }).catch(() => {
-      // API未設定時は静かに失敗
-    });
+    fetch("/api/problems")
+      .then(async (res) => {
+        const body: ProblemsResponse = await res.json();
+        if (!res.ok) {
+          setDataSource("error");
+          setApiError(body.error || `HTTP ${res.status}`);
+          return;
+        }
+        setDataSource(body.source);
+        const problems = body.data;
+        for (const cat of categories) {
+          const catProblems = problems.filter((p) => p.categoryId === cat.id);
+          const maxPoints = catProblems.reduce((sum, p) => sum + p.points, 0);
+          progress.updateCategoryTotals(cat.id, catProblems.length, maxPoints);
+        }
+      })
+      .catch(() => {
+        setDataSource("error");
+        setApiError("APIに接続できません");
+      });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -50,6 +63,24 @@ export default function Home() {
           今日もPythonの文法を練習しよう
         </p>
       </div>
+
+      {/* データソース表示 */}
+      {dataSource === "mock" && (
+        <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl">
+          <Info size={14} className="text-amber-500 shrink-0" />
+          <p className="text-xs text-amber-700">
+            サンプル問題を表示しています（スプレッドシート未接続）
+          </p>
+        </div>
+      )}
+      {dataSource === "error" && (
+        <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-xl">
+          <Info size={14} className="text-red-500 shrink-0" />
+          <p className="text-xs text-red-700">
+            問題データの取得に失敗しました: {apiError}
+          </p>
+        </div>
+      )}
 
       {/* ステータスカード */}
       <div className="grid grid-cols-3 gap-3">

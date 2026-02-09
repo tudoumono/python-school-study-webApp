@@ -32,8 +32,11 @@ class SheetsProblemService implements IProblemService {
 
     try {
       const res = await fetch("/api/problems");
-      if (!res.ok) throw new Error(`API error: ${res.status}`);
-      const problems: Problem[] = await res.json();
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `API error: ${res.status}`);
+      }
+      const { data: problems } = await res.json();
       this.cache = { problems, fetchedAt: Date.now() };
       return problems;
     } catch (error) {
