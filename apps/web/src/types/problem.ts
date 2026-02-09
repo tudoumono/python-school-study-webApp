@@ -17,12 +17,7 @@ export interface CodeBlock {
 
 export type Difficulty = "beginner" | "easy" | "medium" | "hard";
 
-export type CategoryId =
-  | "variables"
-  | "print-statements"
-  | "conditionals"
-  | "loops"
-  | "functions";
+export type CategoryId = string;
 
 export type BlockMode = "token" | "line";
 

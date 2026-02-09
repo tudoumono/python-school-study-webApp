@@ -404,4 +404,129 @@ await sheets.spreadsheets.values.update({
 });
 
 console.log(`   ${problems.length} 問を書き込みました ✓`);
+
+// 3. categories シートを作成
+console.log("3. categories シートを作成...");
+
+// 既存シート確認
+const metaAfter = await sheets.spreadsheets.get({ spreadsheetId });
+const existingSheets = new Set(
+  metaAfter.data.sheets
+    .map((s) => s.properties.title)
+    .filter((title) => typeof title === "string")
+);
+
+async function ensureSheet(title) {
+  if (existingSheets.has(title)) {
+    console.log(`   ${title} シートは既に存在 ✓`);
+    return;
+  }
+
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId,
+    requestBody: {
+      requests: [{ addSheet: { properties: { title } } }],
+    },
+  });
+  existingSheets.add(title);
+  console.log(`   ${title} シートを追加 ✓`);
+}
+
+await ensureSheet("categories");
+
+// 4. カテゴリデータ書き込み
+console.log("4. カテゴリデータ書き込み...");
+
+const catHeader = ["id", "title", "description", "icon", "color", "order"];
+const categoriesData = [
+  { id: "variables", title: "変数とデータ型", description: "変数の作り方とデータ型を学ぼう", icon: "Box", color: "bg-blue-500", order: 1 },
+  { id: "print-statements", title: "print文", description: "print()で画面に表示しよう", icon: "MessageSquare", color: "bg-green-500", order: 2 },
+  { id: "conditionals", title: "条件分岐", description: "if/elif/elseで条件を分けよう", icon: "GitBranch", color: "bg-purple-500", order: 3 },
+  { id: "loops", title: "ループ", description: "for/whileで繰り返そう", icon: "Repeat", color: "bg-orange-500", order: 4 },
+  { id: "functions", title: "関数", description: "defで関数を作ろう", icon: "Puzzle", color: "bg-pink-500", order: 5 },
+];
+
+const catValues = [catHeader, ...categoriesData.map((c) => [c.id, c.title, c.description, c.icon, c.color, String(c.order)])];
+
+await sheets.spreadsheets.values.update({
+  spreadsheetId,
+  range: "categories!A1",
+  valueInputOption: "RAW",
+  requestBody: { values: catValues },
+});
+
+console.log(`   ${categoriesData.length} カテゴリを書き込みました ✓`);
+
+// 5. 学習ログシート作成
+console.log("5. attempt_logs シートを作成...");
+await ensureSheet("attempt_logs");
+
+const attemptLogHeader = [
+  "loggedAt",
+  "userId",
+  "problemId",
+  "categoryId",
+  "isCorrect",
+  "points",
+  "usedHint",
+  "timeSpentSec",
+  "attemptNo",
+  "incorrectPattern",
+];
+
+await sheets.spreadsheets.values.update({
+  spreadsheetId,
+  range: "attempt_logs!A1:J1",
+  valueInputOption: "RAW",
+  requestBody: { values: [attemptLogHeader] },
+});
+console.log("   attempt_logs ヘッダーを設定 ✓");
+
+// 6. 集計シート作成
+console.log("6. 集計シートを作成...");
+await ensureSheet("daily_stats");
+await ensureSheet("student_stats");
+await ensureSheet("category_stats");
+
+const dailyFormula = `=QUERY(attempt_logs!A:J,"select date(A), count(A), sum(E), avg(E), count(unique(B)) where A is not null group by date(A) label date(A) 'date', count(A) 'attempts', sum(E) 'correct', avg(E) 'accuracy', count(unique(B)) 'activeUsers'",1)`;
+const studentFormula = `=QUERY(attempt_logs!A:J,"select B, count(A), sum(E), avg(E), avg(H), avg(I) where B is not null group by B label B 'userId', count(A) 'attempts', sum(E) 'correct', avg(E) 'accuracy', avg(H) 'avgTimeSec', avg(I) 'avgAttemptNo'",1)`;
+const categoryFormula = `=QUERY(attempt_logs!A:J,"select D, count(A), sum(E), avg(E), avg(H) where D is not null group by D label D 'categoryId', count(A) 'attempts', sum(E) 'correct', avg(E) 'accuracy', avg(H) 'avgTimeSec'",1)`;
+
+await sheets.spreadsheets.values.update({
+  spreadsheetId,
+  range: "daily_stats!A1:E2",
+  valueInputOption: "USER_ENTERED",
+  requestBody: {
+    values: [
+      ["date", "attempts", "correct", "accuracy", "activeUsers"],
+      [dailyFormula, "", "", "", ""],
+    ],
+  },
+});
+
+await sheets.spreadsheets.values.update({
+  spreadsheetId,
+  range: "student_stats!A1:F2",
+  valueInputOption: "USER_ENTERED",
+  requestBody: {
+    values: [
+      ["userId", "attempts", "correct", "accuracy", "avgTimeSec", "avgAttemptNo"],
+      [studentFormula, "", "", "", "", ""],
+    ],
+  },
+});
+
+await sheets.spreadsheets.values.update({
+  spreadsheetId,
+  range: "category_stats!A1:E2",
+  valueInputOption: "USER_ENTERED",
+  requestBody: {
+    values: [
+      ["categoryId", "attempts", "correct", "accuracy", "avgTimeSec"],
+      [categoryFormula, "", "", "", ""],
+    ],
+  },
+});
+
+console.log("   集計シートにQUERY式を設定 ✓");
 console.log("完了！");

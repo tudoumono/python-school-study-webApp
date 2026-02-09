@@ -4,20 +4,16 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { UserProgress, ProblemAttempt, UserAnalytics } from "@/types/progress";
 import type { CategoryId, Problem } from "@/types/problem";
+import {
+  postAttemptLearningEvent,
+  type AttemptLearningEventPayload,
+} from "@/lib/services/learningEventService";
 import { calculateLevel } from "@/lib/utils/scoring";
-import { categories } from "@/data/categories";
-
-const CATEGORY_ORDER: CategoryId[] = [
-  "variables",
-  "print-statements",
-  "conditionals",
-  "loops",
-  "functions",
-];
+import { categories as defaultCategories } from "@/data/categories";
 
 function createInitialProgress(): UserProgress {
   const categoryProgress: UserProgress["categoryProgress"] = {};
-  for (const cat of categories) {
+  for (const cat of defaultCategories) {
     categoryProgress[cat.id] = {
       categoryId: cat.id,
       completedCount: 0,
@@ -68,8 +64,14 @@ interface ProgressActions {
     problems: Problem[]
   ) => string | null;
   updateCategoryTotals: (categoryId: CategoryId, totalCount: number, maxPoints: number) => void;
+  setCategoryOrder: (order: CategoryId[]) => void;
   resetProgress: () => void;
 }
+
+// カテゴリの表示順（動的に更新される）
+let categoryOrder: CategoryId[] = defaultCategories
+  .sort((a, b) => a.order - b.order)
+  .map((c) => c.id);
 
 type ProgressStore = UserProgress & ProgressActions;
 
@@ -79,8 +81,11 @@ export const useProgressStore = create<ProgressStore>()(
       ...createInitialProgress(),
 
       recordAttempt: (problem, isCorrect, points, usedHint, timeSpent, incorrectPattern) => {
+        let eventPayload: AttemptLearningEventPayload | null = null;
+
         set((state) => {
           const existing = state.problemAttempts[problem.id];
+          const nextAttemptNo = existing ? existing.attempts + 1 : 1;
           const now = new Date().toISOString();
           const today = now.slice(0, 10);
 
@@ -88,7 +93,7 @@ export const useProgressStore = create<ProgressStore>()(
           const attempt: ProblemAttempt = existing
             ? {
                 ...existing,
-                attempts: existing.attempts + 1,
+                attempts: nextAttemptNo,
                 usedHint: existing.usedHint || usedHint,
                 bestScore: Math.max(existing.bestScore, points),
                 completedAt: isCorrect ? now : existing.completedAt,
@@ -98,7 +103,7 @@ export const useProgressStore = create<ProgressStore>()(
                   : existing.incorrectPatterns,
                 avgTimePerAttempt:
                   (existing.avgTimePerAttempt * existing.attempts + timeSpent) /
-                  (existing.attempts + 1),
+                  nextAttemptNo,
                 hintViewCount: usedHint
                   ? existing.hintViewCount + 1
                   : existing.hintViewCount,
@@ -106,7 +111,7 @@ export const useProgressStore = create<ProgressStore>()(
             : {
                 problemId: problem.id,
                 status: isCorrect ? "completed" : "attempted",
-                attempts: 1,
+                attempts: nextAttemptNo,
                 usedHint,
                 bestScore: points,
                 firstAttemptAt: now,
@@ -144,9 +149,9 @@ export const useProgressStore = create<ProgressStore>()(
           }
 
           // カテゴリアンロック判定
-          for (let i = 1; i < CATEGORY_ORDER.length; i++) {
-            const prevCatId = CATEGORY_ORDER[i - 1];
-            const currentCatId = CATEGORY_ORDER[i];
+          for (let i = 1; i < categoryOrder.length; i++) {
+            const prevCatId = categoryOrder[i - 1];
+            const currentCatId = categoryOrder[i];
             const prev = catProgress[prevCatId];
             if (prev && prev.totalCount > 0 && prev.completedCount >= Math.ceil(prev.totalCount * 0.5)) {
               if (catProgress[currentCatId]) {
@@ -179,6 +184,17 @@ export const useProgressStore = create<ProgressStore>()(
           // アナリティクス再計算
           const analytics = recalculateAnalytics(newAttempts, problem);
 
+          eventPayload = {
+            problemId: problem.id,
+            categoryId: problem.categoryId,
+            isCorrect,
+            points,
+            usedHint,
+            timeSpentSec: timeSpent,
+            attemptNo: nextAttemptNo,
+            incorrectPattern,
+          };
+
           return {
             problemAttempts: newAttempts,
             totalPoints: newTotalPoints,
@@ -200,6 +216,12 @@ export const useProgressStore = create<ProgressStore>()(
             },
           };
         });
+
+        if (eventPayload) {
+          void postAttemptLearningEvent(eventPayload).catch((error) => {
+            console.error("Failed to send learning event:", error);
+          });
+        }
       },
 
       markGaveUp: (problemId) => {
@@ -238,8 +260,15 @@ export const useProgressStore = create<ProgressStore>()(
 
       updateCategoryTotals: (categoryId, totalCount, maxPoints) => {
         set((state) => {
-          const cp = state.categoryProgress[categoryId];
-          if (!cp) return state;
+          const existing = state.categoryProgress[categoryId];
+          const cp = existing || {
+            categoryId,
+            completedCount: 0,
+            totalCount: 0,
+            totalPoints: 0,
+            maxPoints: 0,
+            isUnlocked: categoryOrder[0] === categoryId,
+          };
           return {
             categoryProgress: {
               ...state.categoryProgress,
@@ -247,6 +276,10 @@ export const useProgressStore = create<ProgressStore>()(
             },
           };
         });
+      },
+
+      setCategoryOrder: (order) => {
+        categoryOrder = order;
       },
 
       resetProgress: () => {

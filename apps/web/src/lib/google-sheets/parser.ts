@@ -1,4 +1,4 @@
-import type { Problem, CategoryId, Difficulty, BlockMode, CodeBlock } from "@/types/problem";
+import type { Problem, Category, CategoryId, Difficulty, BlockMode, CodeBlock } from "@/types/problem";
 
 /**
  * スプレッドシートのヘッダー行のカラム順:
@@ -80,4 +80,39 @@ export function parseRows(rows: string[][]): Problem[] {
     .slice(1)
     .map(parseRow)
     .filter((p): p is Problem => p !== null);
+}
+
+/**
+ * categories シートのカラム順:
+ * id | title | description | icon | color | order
+ */
+const CAT_COL = {
+  ID: 0,
+  TITLE: 1,
+  DESCRIPTION: 2,
+  ICON: 3,
+  COLOR: 4,
+  ORDER: 5,
+} as const;
+
+export function parseCategoryRow(row: string[]): Category | null {
+  const id = row[CAT_COL.ID]?.trim();
+  if (!id) return null;
+
+  return {
+    id: id as CategoryId,
+    title: row[CAT_COL.TITLE]?.trim() || id,
+    description: row[CAT_COL.DESCRIPTION]?.trim() || "",
+    icon: row[CAT_COL.ICON]?.trim() || "Folder",
+    color: row[CAT_COL.COLOR]?.trim() || "bg-gray-500",
+    order: parseInt(row[CAT_COL.ORDER] || "0", 10),
+  };
+}
+
+export function parseCategoryRows(rows: string[][]): Category[] {
+  return rows
+    .slice(1)
+    .map(parseCategoryRow)
+    .filter((c): c is Category => c !== null)
+    .sort((a, b) => a.order - b.order);
 }

@@ -3,21 +3,15 @@
 import { useState, useEffect, useCallback } from "react";
 import { RefreshCw, Database, FileSpreadsheet } from "lucide-react";
 import Link from "next/link";
-import type { Problem } from "@/types/problem";
+import type { Problem, Category } from "@/types/problem";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
-
-const categoryLabels: Record<string, string> = {
-  variables: "変数",
-  "print-statements": "print文",
-  conditionals: "条件分岐",
-  loops: "ループ",
-  functions: "関数",
-};
+import type { CategoriesResponse } from "@/app/api/categories/route";
 
 export default function ProblemsPage() {
   const [problems, setProblems] = useState<Problem[]>([]);
+  const [categoryLabels, setCategoryLabels] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastFetched, setLastFetched] = useState<Date | null>(null);
@@ -48,6 +42,17 @@ export default function ProblemsPage() {
 
   useEffect(() => {
     fetchProblems();
+    // カテゴリラベルを取得
+    fetch("/api/categories")
+      .then((r) => r.json())
+      .then((res: CategoriesResponse) => {
+        const labels: Record<string, string> = {};
+        for (const cat of res.data) {
+          labels[cat.id] = cat.title;
+        }
+        setCategoryLabels(labels);
+      })
+      .catch(() => {});
   }, [fetchProblems]);
 
   const categoryCounts = problems.reduce<Record<string, number>>((acc, p) => {

@@ -1,34 +1,48 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { categories } from "@/data/categories";
 import { CategoryCard } from "@/components/dashboard/CategoryCard";
 import { useProgressStore } from "@/lib/store/progressStore";
-import { problemService } from "@/lib/services/problemService";
 import { Card } from "@/components/ui/Card";
 import { Flame, Target, Trophy, Shuffle, FileSpreadsheet, Info } from "lucide-react";
 import Link from "next/link";
+import type { Category } from "@/types/problem";
 import type { ProblemsResponse } from "@/app/api/problems/route";
+import type { CategoriesResponse } from "@/app/api/categories/route";
 
 export default function Home() {
   const progress = useProgressStore();
   const [isLoaded, setIsLoaded] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [dataSource, setDataSource] = useState<"mock" | "sheets" | "error" | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
 
   useEffect(() => {
     setIsLoaded(true);
-    fetch("/api/problems")
-      .then(async (res) => {
-        const body: ProblemsResponse = await res.json();
-        if (!res.ok) {
+
+    // カテゴリと問題を並行取得
+    Promise.all([
+      fetch("/api/categories").then((r) => r.json()) as Promise<CategoriesResponse>,
+      fetch("/api/problems").then((r) => r.json()) as Promise<ProblemsResponse>,
+    ])
+      .then(([catRes, probRes]) => {
+        if (catRes.error || probRes.error) {
           setDataSource("error");
-          setApiError(body.error || `HTTP ${res.status}`);
+          setApiError(catRes.error || probRes.error || "取得失敗");
           return;
         }
-        setDataSource(body.source);
-        const problems = body.data;
-        for (const cat of categories) {
+
+        setDataSource(probRes.source);
+
+        const cats = catRes.data;
+        setCategories(cats);
+
+        // カテゴリ順序をストアに反映
+        progress.setCategoryOrder(cats.map((c) => c.id));
+
+        // 問題データからカテゴリの総数を更新
+        const problems = probRes.data;
+        for (const cat of cats) {
           const catProblems = problems.filter((p) => p.categoryId === cat.id);
           const maxPoints = catProblems.reduce((sum, p) => sum + p.points, 0);
           progress.updateCategoryTotals(cat.id, catProblems.length, maxPoints);
@@ -123,7 +137,6 @@ export default function Home() {
           </div>
         </Link>
 
-
         <Link href="/random">
           <div className="bg-orange-500 text-white rounded-2xl p-4 flex items-center gap-4 active:bg-orange-600 transition-colors">
             <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
@@ -137,7 +150,6 @@ export default function Home() {
             </div>
           </div>
         </Link>
-
 
         <Link href="/problems">
           <div className="bg-emerald-600 text-white rounded-2xl p-4 flex items-center gap-4 active:bg-emerald-700 transition-colors">

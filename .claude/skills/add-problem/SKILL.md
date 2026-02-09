@@ -50,7 +50,20 @@ PyPuzzle の Google スプレッドシートに問題を追加するスキル。
 
 連番は既存の最大値 + 1 で採番する。
 
-### カテゴリ一覧
+### カテゴリ一覧（`categories` シートで管理）
+
+カテゴリはスプレッドシートの `categories` シートで管理される。新しいカテゴリはシートに行を追加するだけで利用可能。
+
+| 列 | ヘッダー | 説明 |
+|----|---------|------|
+| A | id | カテゴリID（英数字+ハイフン） |
+| B | title | 表示名（日本語） |
+| C | description | 説明文 |
+| D | icon | lucide-react のアイコン名（例: Box, MessageSquare, GitBranch） |
+| E | color | Tailwind の背景色クラス（例: bg-blue-500） |
+| F | order | 表示順（1始まり、アンロック順も兼ねる） |
+
+デフォルトカテゴリ:
 
 | categoryId | 日本語名 | order |
 |---|---|---|
